@@ -99,3 +99,16 @@ uint64 sys_hello(void) {
   print_hello(n);
   return 0;
 }
+
+// sysinfo syscall definition
+uint64 sys_sysinfo(void) {
+  int param;
+  argint(0, &param);
+
+  if (param >= 0 && param < 3) {
+    print_sysinfo(param);
+    return 0;
+  }
+
+  return -1;
+}

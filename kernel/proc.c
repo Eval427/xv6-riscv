@@ -698,3 +698,31 @@ procdump(void)
 void print_hello(int n) {
   printf("Hello from the kernel space %d\n", n);
 }
+
+// sysinfo: print system info
+void print_sysinfo(int n) {
+  switch (n) {
+    case 0:
+      struct proc *p;
+      int active_procs = 0;
+      for (p = proc; p < &proc[NPROC]; p++) {
+        if (p->state > 1) { // > 1 is not USED/UNUSED
+          active_procs++;
+        }
+      }
+      printf("%d active system processes\n", active_procs);
+      break;
+    
+    case 1:
+      printf("%d syscalls since boot\n", get_total_syscalls());
+      break;
+    
+    case 2:
+      printf("%d available pages\n", freepages());
+      break;
+    
+    case 3:
+      printf("How did this even happen???\n");
+      break;
+  }
+}

@@ -80,3 +80,16 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+// Fetch the number of free pages in the kernel
+int
+freepages(void)
+{
+  int count = 0;
+  struct run *r;
+
+  // kmem.freelist represents the first available page in the list of pages in kernel memory
+  for (r = kmem.freelist; r != 0; r = r->next) count++;
+
+  return count;
+}
