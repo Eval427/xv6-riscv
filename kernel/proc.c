@@ -124,6 +124,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->syscall_count = 0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -706,9 +707,11 @@ void print_sysinfo(int n) {
       struct proc *p;
       int active_procs = 0;
       for (p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
         if (p->state > 1) { // > 1 is not USED/UNUSED
           active_procs++;
         }
+        release(&p->lock);
       }
       printf("%d active system processes\n", active_procs);
       break;
@@ -725,4 +728,18 @@ void print_sysinfo(int n) {
       printf("How did this even happen???\n");
       break;
   }
+}
+
+int generate_procinfo(struct pinfo *p) {
+  struct proc *currProc = myproc();
+
+  if (!p || !currProc) {
+    return -1;
+  }
+
+  p->ppid = currProc->parent->pid;
+  p->syscall_count = currProc->syscall_count;
+  p->page_usage = PGROUNDUP(currProc->sz) / PGSIZE;
+
+  return 0;
 }

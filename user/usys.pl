@@ -37,4 +37,5 @@ entry("sbrk");
 entry("sleep");
 entry("uptime");
 entry("hello");  # hello syscall for user
-entry("sysinfo") # sysinfo syscall for user
+entry("sysinfo"); # sysinfo syscall for user
+entry("procinfo"); # procinfo syscall for user

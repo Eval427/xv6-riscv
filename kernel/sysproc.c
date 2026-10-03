@@ -112,3 +112,18 @@ uint64 sys_sysinfo(void) {
 
   return -1;
 }
+
+uint64 sys_procinfo(void) {
+  uint64 pinfo_addr; // Address of input pinfo struct
+  struct pinfo info; // Struct to write into user space
+
+  argaddr(0, &pinfo_addr); // Take input value from reg0 and store into pinfo_addr
+
+  // Write process information to info
+  if (generate_procinfo(&info) < 0) return -1;
+  
+  // Copy info to user space
+  if (copyout(myproc()->pagetable, pinfo_addr, (char *)&info, sizeof(info)) < 0) return -1;
+
+  return 0;
+}
