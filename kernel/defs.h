@@ -109,7 +109,7 @@ int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
 void            print_hello(int); // hello
-void            print_sysinfo(int); // sysinfo
+int             print_sysinfo(int); // sysinfo
 int             generate_procinfo(struct pinfo*); // procinfo
 
 // swtch.S

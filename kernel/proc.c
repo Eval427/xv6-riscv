@@ -701,7 +701,7 @@ void print_hello(int n) {
 }
 
 // sysinfo: print system info
-void print_sysinfo(int n) {
+int print_sysinfo(int n) {
   switch (n) {
     case 0:
       struct proc *p;
@@ -714,19 +714,21 @@ void print_sysinfo(int n) {
         release(&p->lock);
       }
       printf("%d active system processes\n", active_procs);
-      break;
+      return active_procs;
     
     case 1:
-      printf("%d syscalls since boot\n", get_total_syscalls());
-      break;
+      int total_syscalls = get_total_syscalls();
+      printf("%d syscalls since boot\n", total_syscalls);
+      return total_syscalls;
     
     case 2:
-      printf("%d available pages\n", freepages());
-      break;
+      int free_pages = freepages();
+      printf("%d available pages\n", free_pages);
+      return free_pages;
     
-    case 3:
+    default:
       printf("How did this even happen???\n");
-      break;
+      return -1;
   }
 }
 

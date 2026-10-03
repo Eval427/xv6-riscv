@@ -106,8 +106,7 @@ uint64 sys_sysinfo(void) {
   argint(0, &param);
 
   if (param >= 0 && param < 3) {
-    print_sysinfo(param);
-    return 0;
+    return print_sysinfo(param);
   }
 
   return -1;

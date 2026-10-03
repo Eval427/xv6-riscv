@@ -1,7 +1,12 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
-#include "kernel/proc.h"
 #include "user/user.h"
+
+struct pinfo {
+  int pid;
+  int state;
+  int syscall_count;
+};
 
 int main(int argc, char *argv[]) {
   uint64 pinfo_addr;
