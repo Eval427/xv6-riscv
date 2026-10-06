@@ -713,17 +713,17 @@ int print_sysinfo(int n) {
         }
         release(&p->lock);
       }
-      printf("%d active system processes\n", active_procs);
+      //printf("%d active system processes\n", active_procs);
       return active_procs;
     
     case 1:
       int total_syscalls = get_total_syscalls();
-      printf("%d syscalls since boot\n", total_syscalls);
+      //printf("%d syscalls since boot\n", total_syscalls);
       return total_syscalls;
     
     case 2:
       int free_pages = freepages();
-      printf("%d available pages\n", free_pages);
+      //printf("%d available pages\n", free_pages);
       return free_pages;
     
     default:
