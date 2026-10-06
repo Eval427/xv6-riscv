@@ -203,7 +203,7 @@ The goal of part 1 was to provide the user with information about the system. Gi
     int total_syscalls = 0;
 
     int get_total_syscalls() {
-    return total_syscalls;
+        return total_syscalls;
     }
     ```
     and incremented the counter every time a system call was executed in `syscall(void)`:
@@ -240,3 +240,43 @@ $ sysinfo 1
 $ sysinfo 2
 32532 available pages
 ```
+
+## Part 2
+Part 2 provides process-specific information when called. It requires the user to pass in an address to a `pinfo` struct as an argument and returns a filled `pinfo` struct. Since the dataflow was discussed in part 1, we will show and explain file changes one by one instead
+
+### Changes
+1. First, while unnecessary, a `main()` function was made so that `procinfo` could be called via the command line interface
+    ```makefile
+    # Makefile:125-144
+
+    UPROGS=\
+        ...
+        $U/_procinfo\
+        ...
+    ```
+    ```c
+    // user/procinfo.c
+
+    #include "kernel/types.h"
+    #include "kernel/stat.h"
+    #include "user/user.h"
+
+    struct pinfo {
+    int pid;
+    int state;
+    int syscall_count;
+    };
+
+    int main(int argc, char *argv[]) {
+    uint64 pinfo_addr;
+
+    if (argc < 2) {
+        fprintf(2, "Usage: procinfo <pinfo pointer>\n");
+        return -1;
+    }
+
+    pinfo_addr = (uint64)atoi(argv[1]);
+
+    return procinfo((struct pinfo *)pinfo_addr);
+    }
+    ```
