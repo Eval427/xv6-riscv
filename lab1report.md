@@ -2,6 +2,7 @@
 ### CSEN 383
 ### Zachary Common and Calianna Collins
 ### https://github.com/Eval427/xv6-riscv
+#### https://youtu.be/uY5zhrfA_8M
 
 ## Modified files
 ```m
@@ -222,7 +223,6 @@ The goal of part 1 was to provide the user with information about the system. Gi
         // and store its return value in p->trapframe->a0
         p->trapframe->a0 = syscalls[num]();
         total_syscalls++; // <---
-        p->syscall_count++;
     } else {
         printf("%d %s: unknown sys call %d\n",
                 p->pid, p->name, num);
@@ -243,7 +243,6 @@ $ sysinfo 2
 
 ## Part 2
 Part 2 provides process-specific information when called. It requires the user to pass in an address to a `pinfo` struct as an argument and returns a filled `pinfo` struct. Since the dataflow was discussed in part 1, we will show and explain file changes one by one instead
-
 ### Changes
 1. First, while unnecessary, a `main()` function was made so that `procinfo` could be called via the command line interface
     ```makefile
@@ -280,3 +279,107 @@ Part 2 provides process-specific information when called. It requires the user t
     return procinfo((struct pinfo *)pinfo_addr);
     }
     ```
+1. Next we defined the struct in kernel space so that it could be referenced
+	```c
+    // kernel/proc.h
+
+    // Process info
+	struct pinfo {
+	int ppid;                    // Parent process ID
+	int syscall_count;           // Total number of system calls that the current process has made
+	int page_usage;              // Current process' memory size
+	};
+	
+	// kernel/defs.h
+	struct pinfo;
+	
+	// 
+	```
+1. The struct proc also had to be adjusted to add a syscall counter to it to be referenced later
+	```c
+	// kernel/syscall.c:
+	struct proc {
+		struct spinlock lock;
+		// p->lock must be held when using these:
+		enum procstate state;        // Process state
+		void *chan;                  // If non-zero, sleeping on chan
+		int killed;                  // If non-zero, have been killed
+		int xstate;                  // Exit status to be returned to parent's wait
+		int pid;                     // Process ID
+
+		// wait_lock must be held when using this:
+		struct proc *parent;         // Parent process
+
+		// these are private to the process, so p->lock need not be held.
+		uint64 kstack;               // Virtual address of kernel stack
+		uint64 sz;                   // Size of process memory (bytes)
+		pagetable_t pagetable;       // User page table
+		struct trapframe *trapframe; // data page for trampoline.S
+		struct context context;      // swtch() here to run process
+		struct file *ofile[NOFILE];  // Open files
+		struct inode *cwd;           // Current directory
+		char name[16];               // Process name (debugging)
+		int syscall_count;           // <--- Total number of system calls that the current process has made
+	};
+	```
+1. To track the total syscalls of a single function, we again added a counter to syscall.c
+	```c
+	// kernel.syscall.c:144-162
+
+    void
+    syscall(void)
+    {
+	    int num;
+	    struct proc *p = myproc();
+
+	    num = p->trapframe->a7;
+	    if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+	        // Use num to lookup the system call function for num, call it,
+	        // and store its return value in p->trapframe->a0
+	        p->trapframe->a0 = syscalls[num]();
+	        total_syscalls++;
+	        p->syscall_count++; // <---
+	    } else {
+	        printf("%d %s: unknown sys call %d\n",
+	                p->pid, p->name, num);
+	        p->trapframe->a0 = -1;
+	    }
+    }
+    ```
+2. The function procinfo is defined in sysproc.c, which handles input, and uniquely handles output of the struct to user space using the copyout function.
+	```c
+	// kernel/sysproc.c:115-128
+	uint64 sys_procinfo(void) {
+		uint64 pinfo_addr; // Address of input pinfo struct
+		struct pinfo info; // Struct to write into user space
+		
+		argaddr(0, &pinfo_addr); // Take input value from reg0 and store into pinfo_addr
+		
+		// Write process information to info
+		if (generate_procinfo(&info) < 0) return -1;
+		
+		// Copy info to user space
+		if (copyout(myproc()->pagetable, pinfo_addr, (char *)&info, sizeof(info)) < 0) return -1;
+		
+		return 0;
+	}
+	```
+2. The function is finally defined in proc.c, and assignes the values to the struct pinfo from various sources, and countes the pages of memory used by dividing the size of the process by page size rounded up.
+	```c
+	// kernel/proc.c:735-747
+	int generate_procinfo(struct pinfo *p) {
+		struct proc *currProc = myproc();
+
+		if (!p || !currProc) {
+			return -1;
+		}
+
+		p->ppid = currProc->parent->pid;
+		p->syscall_count = currProc->syscall_count;
+		p->page_usage = PGROUNDUP(currProc->sz) / PGSIZE;
+
+		return 0;
+	}
+	```
+## Contributions
+Both of us completed the main code seperately. The report part 0 and 1 were written by Zacharay, and part 2 was written by Calianna. The demo video was recorded by Zachary.
