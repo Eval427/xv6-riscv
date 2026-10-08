@@ -3,9 +3,9 @@
 #include "user/user.h"
 
 struct pinfo {
-  int pid;
-  int state;
-  int syscall_count;
+      int ppid;
+      int syscall_count;
+      int page_usage;
 };
 
 int main(int argc, char *argv[]) {

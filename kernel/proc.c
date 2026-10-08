@@ -727,7 +727,7 @@ int print_sysinfo(int n) {
       return free_pages;
     
     default:
-      printf("How did this even happen???\n");
+      printf("Invalid input\n");
       return -1;
   }
 }
@@ -739,7 +739,9 @@ int generate_procinfo(struct pinfo *p) {
     return -1;
   }
 
-  p->ppid = currProc->parent->pid;
+  if (currProc->parent) p->ppid = currProc->parent->pid;
+  else p->ppid = 0;
+  
   p->syscall_count = currProc->syscall_count;
   p->page_usage = PGROUNDUP(currProc->sz) / PGSIZE;
 

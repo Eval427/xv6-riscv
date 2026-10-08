@@ -44,7 +44,7 @@ Hello from the kernel space 10
 ```
 
 ## Part 1
-The goal of part 1 was to provide the user with information about the system. Given an input of 0, 1, or 2, the total number of active processes, total system calls, or free memory pages in the system would be displayed. When the user inputs `sysinfo <0,1,2>`, the requested data is printed to the terminal and returned as an `int`.
+The goal of part 1 was to provide the user with information about the system. Given an input of 0, 1, or 2, the total number of active processes, total system calls, or free memory pages in the system would be displayed. When the user inputs `sysinfo <0,1,2>`, the requested data is returned as an `int`.
 
 ### Dataflow
 1. Every system call is executed on the user side initially. Therefore, on the user side, it is first necessary to define the name of the system call and the function declaration to determine the number of user arguments that must be given to the call.
@@ -57,7 +57,7 @@ The goal of part 1 was to provide the user with information about the system. Gi
     ```c
     // user/usys.pl:40
 
-    entry("sysinfo") # sysinfo syscall for user
+    entry("sysinfo"); # sysinfo syscall for user
     ```
     gets compiled into assembly in `usys.S` as
     ```S
@@ -68,7 +68,7 @@ The goal of part 1 was to provide the user with information about the system. Gi
     ret
     ```
 
-1. Once the system call is executed, it looks for its respective `main()` function. This is determined in `Makefile`:
+1. To provide optional functionality via the command line for debugging, a respective `main()` function is implemented in `sysinfo.c` and linked to the syscall. This is determined in `Makefile`:
     ```makefile
     # Makefile:99-143
 
@@ -125,7 +125,7 @@ The goal of part 1 was to provide the user with information about the system. Gi
 
     And defined in `sysproc.c`:
     ```c
-    // kernel/sysproc.c:103-114
+    // kernel/sysproc.c:104-113
 
     // sysinfo syscall definition
     uint64 sys_sysinfo(void) {
@@ -133,53 +133,52 @@ The goal of part 1 was to provide the user with information about the system. Gi
     argint(0, &param);
 
     if (param >= 0 && param < 3) {
-        print_sysinfo(param);
-        return 0;
+        return print_sysinfo(param);
     }
 
     return -1;
     }
     ```
 
-1. The function `print_sysinfo(int)` is implemented in `proc.c` not out of necessesity, but rather ease of implementation. Most information required by this system call resides in `proc.c` and changes that were required to fetch additional information were also made in the same place. Once executed, the return value of the function is routed back to `user/sysinfo.c:13` and, thusly, the user
+1. The function `print_sysinfo(int)` is implemented in `proc.c` not out of necessesity, but rather ease of implementation. Most information required by this system call resides in `proc.c` and changes that were required to fetch additional information were also made in the same place. Once executed, the return value of the function is routed back to user space.
     ```c
     // kernel/proc.c:703-733
 
     // sysinfo: print system info
     int print_sysinfo(int n) {
-        switch (n) {
-            case 0:
-            struct proc *p;
-            int active_procs = 0;
-            for (p = proc; p < &proc[NPROC]; p++) {
-                acquire(&p->lock);
-                if (p->state > 1) { // > 1 is not USED/UNUSED
-                active_procs++;
-                }
-                release(&p->lock);
+    switch (n) {
+        case 0:
+        struct proc *p;
+        int active_procs = 0;
+        for (p = proc; p < &proc[NPROC]; p++) {
+            acquire(&p->lock);
+            if (p->state > 1) { // > 1 is not USED/UNUSED
+            active_procs++;
             }
-            printf("%d active system processes\n", active_procs);
-            return active_procs;
-            
-            case 1:
-            int total_syscalls = get_total_syscalls();
-            printf("%d syscalls since boot\n", total_syscalls);
-            return total_syscalls;
-            
-            case 2:
-            int free_pages = freepages();
-            printf("%d available pages\n", free_pages);
-            return free_pages;
-            
-            default:
-            printf("How did this even happen???\n");
-            return -1;
+            release(&p->lock);
         }
+        //printf("%d active system processes\n", active_procs);
+        return active_procs;
+        
+        case 1:
+        int total_syscalls = get_total_syscalls();
+        //printf("%d syscalls since boot\n", total_syscalls);
+        return total_syscalls;
+        
+        case 2:
+        int free_pages = freepages();
+        //printf("%d available pages\n", free_pages);
+        return free_pages;
+        
+        default:
+        printf("Invalid input\n");
+        return -1;
+    }
     }
     ```
 
 ### Changes
-1. In order to get the number of free pages in the system, a new function `freepages(void)` was implemented in `kernel/kalloc.c`. To fetch the total number of available pages, it starts from the last used page in the kernel memory and walks through the linked list of free pages until it reaches the end
+1. In order to get the number of free pages in the system, a new function `freepages(void)` was implemented in `kernel/kalloc.c`. To fetch the total number of available pages, it starts from the first available page in the list of pages in kernel memory and iterates through the list of available pages until it reaches the end.
     ```c
     // kernel/kalloc.c:84-95
 
@@ -231,7 +230,7 @@ The goal of part 1 was to provide the user with information about the system. Gi
     }
     ```
 
-### Output
+### Output (Assuming prints are active)
 ```sh
 $ sysinfo 0
 3 active system processes
@@ -242,7 +241,7 @@ $ sysinfo 2
 ```
 
 ## Part 2
-Part 2 provides process-specific information when called. It requires the user to pass in an address to a `pinfo` struct as an argument and returns a filled `pinfo` struct. Since the dataflow was discussed in part 1, we will show and explain file changes one by one instead
+Part 2 provides process-specific information when called. It requires the user to pass in an address to a `pinfo` struct as an argument and returns -1 or 0 on a fail/pass and fills the user's `pinfo` struct using `copyout()`. Since the dataflow was discussed in part 1, we will show and explain file changes one by one instead
 ### Changes
 1. First, while unnecessary, a `main()` function was made so that `procinfo` could be called via the command line interface
     ```makefile
@@ -260,44 +259,55 @@ Part 2 provides process-specific information when called. It requires the user t
     #include "kernel/stat.h"
     #include "user/user.h"
 
-    struct pinfo {
-    int pid;
-    int state;
-    int syscall_count;
-    };
+	struct pinfo {
+        int ppid;
+        int syscall_count;
+        int page_usage;
+	};
 
     int main(int argc, char *argv[]) {
-    uint64 pinfo_addr;
+        uint64 pinfo_addr;
 
-    if (argc < 2) {
-        fprintf(2, "Usage: procinfo <pinfo pointer>\n");
-        return -1;
-    }
+        if (argc < 2) {
+            fprintf(2, "Usage: procinfo <pinfo pointer>\n");
+            return -1;
+        }
 
-    pinfo_addr = (uint64)atoi(argv[1]);
+        pinfo_addr = (uint64)atoi(argv[1]);
 
-    return procinfo((struct pinfo *)pinfo_addr);
+        return procinfo((struct pinfo *)pinfo_addr);
     }
     ```
-1. Next we defined the struct in kernel space so that it could be referenced
+1. Next, we defined the struct in kernel space so that it could be referenced
 	```c
     // kernel/proc.h
 
     // Process info
 	struct pinfo {
-	int ppid;                    // Parent process ID
-	int syscall_count;           // Total number of system calls that the current process has made
-	int page_usage;              // Current process' memory size
+        int ppid;                    // Parent process ID
+        int syscall_count;           // Total number of system calls that the current process has made
+        int page_usage;              // Current process' memory size
 	};
 	
 	// kernel/defs.h
-	struct pinfo;
 	
-	// 
+    struct pinfo;
+
+    // kalloc.c
+    int freepages(void);
+
+    // proc.c
+    int generate_procinfo(struct pinfo*); // procinfo
+
+    // syscall.c
+    int get_total_syscalls(void);
+
+
 	```
-1. The struct proc also had to be adjusted to add a syscall counter to it to be referenced later
+1. The `struct proc` also had to be adjusted to add a syscall counter to it to be referenced later
 	```c
-	// kernel/syscall.c:
+	// kernel/proc.h
+
 	struct proc {
 		struct spinlock lock;
 		// p->lock must be held when using these:
@@ -322,9 +332,34 @@ Part 2 provides process-specific information when called. It requires the user t
 		int syscall_count;           // <--- Total number of system calls that the current process has made
 	};
 	```
-1. To track the total syscalls of a single function, we again added a counter to syscall.c
+    and the `syscall_count` counter had to be initialized to zero when the process is first allocated
+    ```c
+    // kernel/proc.c:109-127
+
+    static struct proc*
+    allocproc(void)
+    {
+    struct proc *p;
+
+    for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if(p->state == UNUSED) {
+        goto found;
+        } else {
+        release(&p->lock);
+        }
+    }
+    return 0;
+
+    found:
+    p->pid = allocpid();
+    p->state = USED;
+    p->syscall_count = 0; // <---
+    ...
+    ```
+1. To track the total syscalls of a single process, we again added a counter to syscall.c
 	```c
-	// kernel.syscall.c:144-162
+	// kernel/syscall.c:144-162
 
     void
     syscall(void)
@@ -346,9 +381,10 @@ Part 2 provides process-specific information when called. It requires the user t
 	    }
     }
     ```
-2. The function procinfo is defined in sysproc.c, which handles input, and uniquely handles output of the struct to user space using the copyout function.
+2. The function procinfo is defined in `sysproc.c`, which handles input, and uniquely handles output of the struct to user space using the `copyout()` function.
 	```c
 	// kernel/sysproc.c:115-128
+
 	uint64 sys_procinfo(void) {
 		uint64 pinfo_addr; // Address of input pinfo struct
 		struct pinfo info; // Struct to write into user space
@@ -364,22 +400,52 @@ Part 2 provides process-specific information when called. It requires the user t
 		return 0;
 	}
 	```
-2. The function is finally defined in proc.c, and assignes the values to the struct pinfo from various sources, and countes the pages of memory used by dividing the size of the process by page size rounded up.
+2. The function is finally defined in `proc.c`, and assignes the values to the struct pinfo from various sources, and countes the pages of memory used by dividing the size of the process by page size rounded up.
 	```c
-	// kernel/proc.c:735-747
-	int generate_procinfo(struct pinfo *p) {
-		struct proc *currProc = myproc();
+	// kernel/proc.c:735-749
 
-		if (!p || !currProc) {
-			return -1;
-		}
+    int generate_procinfo(struct pinfo *p) {
+    struct proc *currProc = myproc();
 
-		p->ppid = currProc->parent->pid;
-		p->syscall_count = currProc->syscall_count;
-		p->page_usage = PGROUNDUP(currProc->sz) / PGSIZE;
+    if (!p || !currProc) {
+        return -1;
+    }
 
-		return 0;
-	}
+    if (currProc->parent) p->ppid = currProc->parent->pid;
+    else p->ppid = 0;
+    
+    p->syscall_count = currProc->syscall_count;
+    p->page_usage = PGROUNDUP(currProc->sz) / PGSIZE;
+
+    return 0;
+    }
 	```
+## Lab 1 Test Output
+```bash
+xv6 kernel is booting
+
+init: starting sh
+
+$ lab1test 65536 2
+[sysinfo] active proc: 3, syscalls: 50, free pages: 32532
+[procinfo 4] ppid: 3, syscalls: 10, page usage: 21
+[procinfo 5] ppid: 3, syscalls: 10, page usage: 21
+[sysinfo] active proc: 5, syscalls: 242, free pages: 32478
+
+$ lab1test 65000 10
+[sysinfo] active proc: 3, syscalls: 331, free pages: 32532
+[procinfo 7] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 8] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 9] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 10] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 11] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 12] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 13] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 14] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 15] ppid: 6, syscalls: 10, page usage: 20
+[procinfo 16] ppid: 6, syscalls: 10, page usage: 20
+[sysinfo] active proc: 13, syscalls: 1051, free pages: 32272
+```
+
 ## Contributions
-Both of us completed the main code seperately. The report part 0 and 1 were written by Zacharay, and part 2 was written by Calianna. The demo video was recorded by Zachary.
+Both of us completed the main code seperately. The report part 0 and 1 were written by Zachary, and part 2 was written by Calianna. The demo video was recorded by Zachary.
