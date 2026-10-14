@@ -747,3 +747,15 @@ int generate_procinfo(struct pinfo *p) {
 
   return 0;
 }
+
+void set_proc_tickets(int tickets) {
+  struct proc *currProc = myproc();
+
+  if (!currProc) {
+    printf("Unable to get current process in set_proc_tickets()\n");
+    return;
+  }
+
+  currProc->tickets = tickets;
+  printf("DEBUG - Successfully set tickets to %d\n", tickets);
+}

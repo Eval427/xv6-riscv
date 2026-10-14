@@ -126,3 +126,16 @@ uint64 sys_procinfo(void) {
 
   return 0;
 }
+
+uint64 sys_sched_tickets(void) {
+  int param;
+  argint(0, &param);
+
+  if (param <= 10000) {
+    set_proc_tickets(param);
+  } else {
+    printf("The number of tickets for each process cannot exceed 10,000\n");
+  }
+
+  return 0;
+}
