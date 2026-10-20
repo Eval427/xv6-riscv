@@ -759,3 +759,20 @@ void set_proc_tickets(int tickets) {
   currProc->tickets = tickets;
   printf("DEBUG - Successfully set tickets to %d\n", tickets);
 }
+
+int sched_statistics(void) {
+  struct proc *p;
+  
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    int pid = p->pid;
+    char name[16] = p->name;
+    int tickets = p->tickets;
+    int ticks = 0;
+    release(&p->lock);
+
+    printf("%d(%s): tickets: %d, ticks: %d", pid, name, tickets, ticks);
+  }
+
+  return 0;
+}

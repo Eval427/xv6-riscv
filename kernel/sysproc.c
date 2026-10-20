@@ -139,3 +139,8 @@ uint64 sys_sched_tickets(void) {
 
   return 0;
 }
+uint64 sys_sched_statistics(void) {
+  // name of process
+  sched_statistics();
+  return 0;
+}

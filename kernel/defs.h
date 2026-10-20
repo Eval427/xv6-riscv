@@ -112,6 +112,7 @@ void            print_hello(int); // hello
 int             print_sysinfo(int); // sysinfo
 int             generate_procinfo(struct pinfo*); // procinfo
 void            set_proc_tickets(int); // sched_tickets
+int             sched_statistics(void); // sched_statistics
 
 // swtch.S
 void            swtch(struct context*, struct context*);
