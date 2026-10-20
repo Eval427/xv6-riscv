@@ -766,7 +766,7 @@ int sched_statistics(void) {
   for (p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     int pid = p->pid;
-    char name[16] = p->name;
+    char *name = p->name;
     int tickets = p->tickets;
     int ticks = 0;
     release(&p->lock);
