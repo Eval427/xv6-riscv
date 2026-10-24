@@ -108,6 +108,8 @@ struct proc {
   int tickets;                 // Number of tickets for the lottery scheduling process
 };
 
+extern struct proc proc[NPROC];
+
 // Process info
 struct pinfo {
   int ppid;                    // Parent process ID

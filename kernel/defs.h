@@ -114,6 +114,10 @@ int             generate_procinfo(struct pinfo*); // procinfo
 void            set_proc_tickets(int); // sched_tickets
 int             sched_statistics(void); // sched_statistics
 
+// scheduler.c
+void            lottery();
+void            stride();
+
 // swtch.S
 void            swtch(struct context*, struct context*);
 
