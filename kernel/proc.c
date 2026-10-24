@@ -124,7 +124,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
-  p->tickets = 1; // Need at least one ticket to run at all
+  p->tickets = 100; // Need at least one ticket to run at all - Give 100 for faster testing
   p->syscall_count = 0;
 
   // Allocate a trapframe page.
@@ -772,14 +772,15 @@ int sched_statistics(void) {
   struct proc *p;
   
   for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->state < 2) continue;
     acquire(&p->lock);
     int pid = p->pid;
     char *name = p->name;
     int tickets = p->tickets;
-    int ticks = 0;
+    int ticks = p->ticks;
     release(&p->lock);
 
-    printf("%d(%s): tickets: %d, ticks: %d", pid, name, tickets, ticks);
+    printf("%d(%s): tickets: %d, ticks: %d\n", pid, name, tickets, ticks);
   }
 
   return 0;

@@ -48,6 +48,7 @@ void lottery() {
             // When the # of parsed tickets overtakes the winner, that proc is selected
             if (winning_ticket < parsed_tix) {
                 p->state = RUNNING;
+                p->ticks += 1;
                 c->proc = p;
                 swtch(&c->context, &p->context);
 
