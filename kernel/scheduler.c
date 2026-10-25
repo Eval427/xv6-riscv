@@ -61,7 +61,7 @@ void lottery() {
   }
 }
 
-// IMPLEMENT STRIDE SCHEDULER HERE
+// Stride scheduler
 void stride() {
   struct proc *p;
   struct cpu *c = mycpu();
@@ -70,13 +70,12 @@ void stride() {
 
   // Iterate through all runnable procs to gather total processes, set pass values if unset
   uint64 total_procs = 0;
-  uint64 low = 10000;
+  struct proc *winner = proc;
   for (p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if (p->state == RUNNABLE && p->tickets > 0) { 
       total_procs += 1;
-      // if (p->pass == 0) p->pass += p->stride;
-      if (low > p->pass) low = p->pass;
+      if (winner->pass > p->pass) winner = p;
     }
     release(&p->lock);
   }
@@ -88,20 +87,14 @@ void stride() {
     return;
   }
 
-  for (p = proc; p < &proc[NPROC]; p++) {
-    acquire(&p->lock);
-    if (p->pass == low && p->state == RUNNABLE) {
-      // if multiple processes have same pass, the first in the list is arbitrarily chosen
-      p->state = RUNNING;
-      p->ticks += 1;
-      p->pass += p->stride;
-      c->proc = p;
-      swtch(&c->context, &p->context);
+  // Switch context to winner (last element in the case of a tie)
+  acquire(&winner->lock);
+  winner->state = RUNNING;
+  winner->ticks += 1;
+  winner->pass += winner->stride;
+  c->proc = winner;
+  swtch(&c->context, &winner->context);
 
-      c->proc = 0;
-      release(&p->lock);
-      break;
-    }
-    release(&p->lock);
-  }
+  c->proc = 0;
+  release(&winner->lock);
 }
