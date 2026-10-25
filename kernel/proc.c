@@ -110,6 +110,7 @@ static struct proc*
 allocproc(void)
 {
   struct proc *p;
+  uint64 K = 10000;
 
   for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
@@ -126,6 +127,9 @@ found:
   p->state = USED;
   p->tickets = 100; // Need at least one ticket to run at all - Give 100 for faster testing
   p->syscall_count = 0;
+  p->stride = K / p->tickets;
+  p->pass = p->stride;
+  p->ticks = 0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -471,6 +475,7 @@ scheduler(void)
           // before jumping back to us.
           p->state = RUNNING;
           c->proc = p;
+          p->ticks += 1;
           swtch(&c->context, &p->context);
 
           // Process is done running for now.
@@ -758,6 +763,7 @@ int generate_procinfo(struct pinfo *p) {
 
 void set_proc_tickets(int tickets) {
   struct proc *currProc = myproc();
+  int K = 10000;
 
   if (!currProc) {
     printf("Unable to get current process in set_proc_tickets()\n");
@@ -765,6 +771,8 @@ void set_proc_tickets(int tickets) {
   }
 
   currProc->tickets = tickets;
+  currProc->stride = K / currProc->tickets;
+  currProc->pass = currProc->stride;
   printf("DEBUG - Successfully set tickets to %d\n", tickets);
 }
 

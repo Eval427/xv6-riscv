@@ -107,6 +107,8 @@ struct proc {
   int syscall_count;           // Total number of system calls that the current process has made
   int tickets;                 // Number of tickets for the lottery scheduling process
   int ticks;                   // Number of times this process was called (chosen) by scheduler
+  int pass;
+  int stride;
 };
 
 extern struct proc proc[NPROC];
