@@ -773,7 +773,7 @@ void set_proc_tickets(int tickets) {
   currProc->tickets = tickets;
   currProc->stride = K / currProc->tickets;
   currProc->pass = currProc->stride;
-  printf("DEBUG - Successfully set tickets to %d\n", tickets);
+  //printf("DEBUG - Successfully set tickets to %d\n", tickets);
 }
 
 int sched_statistics(void) {
