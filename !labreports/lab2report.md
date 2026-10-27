@@ -196,6 +196,7 @@ void set_proc_tickets(int); // sched_tickets
 extern uint64 sys_sched_statistics(void);
 ...
 [SYS_sched_tickets] sys_sched_tickets, // sched_tickets: syscall entry
+```
 
 ```c
 // kernel/syscall.h:26
