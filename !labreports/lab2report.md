@@ -18,6 +18,7 @@
 \ kernel/syscall.c
 \ kernel/syscall.h
 \ kernel/sysproc.c
++ kernel/scheduler.c
 
 + user/lab2test.c
 + user/sched_tickets.c
