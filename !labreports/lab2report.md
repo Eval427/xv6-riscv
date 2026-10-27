@@ -237,6 +237,8 @@ Part 2 implements two new scheduling policies, `lottery` and `stride`, alongside
 ### Lottery Scheduler
 The first requirement for the lottery scheduler is a random number generator. Based on the lab documentation alongside some modifications to make the overall implementation more straightforward, a pseudo-random number generator was implemented.
 
+#### Pseudo-Random Number Generator
+
 ```c
 // kernel/scheduler.c
 
@@ -248,6 +250,8 @@ uint32 rand() {
     return lfsr = (lfsr >> 1) | (bit << 31);
 }
 ```
+
+#### Implementation
 
 The lottery scheduler implementation then works as follows:
 1. Iterate through the list of processes and add the tickets of any `RUNNABLE` process to `total_tix`
@@ -307,8 +311,28 @@ void lottery() {
 }
 ```
 
+#### Output
+```sh
+$ lab2test 100 3 30 20 10
+1(init): tickets: 100, ticks: 24
+2(sh): tickets: 100, ticks: 14
+4(lab2test): tickets: 100, ticks: 66
+5(lab2test): tickets: 30, ticks: 50
+6(lab2test): tickets: 20, ticks: 41
+7(lab2test): tickets: 10, ticks: 10
+
+$ lab2test 100 2 19 1
+1(init): tickets: 100, ticks: 28
+2(sh): tickets: 100, ticks: 16
+8(lab2test): tickets: 100, ticks: 82
+9(lab2test): tickets: 19, ticks: 91
+10(lab2test): tickets: 1, ticks: 9
+```
+
 ### Stride Scheduler
 The stride scheduler also takes advantage of the `tickets` from the lottery scheduler. However, instead of using a random number generator to pick the winning process, it instead chooses the process with the lowest `pass`. The logic for managing and choosing processes in the stride policy is as follows:
+
+#### Implementation
 
 1. By default, each process' `pass` starts at 0 and `stride` is calculated as `K` / `tickets` where `K` is some large constant
    - For this implementation, `K` = 10,000
@@ -357,6 +381,24 @@ void stride() {
   c->proc = 0;
   release(&winner->lock);
 }
+```
+
+#### Output
+```sh
+$ lab2test 100 3 30 20 10
+1(init): tickets: 100, ticks: 163
+2(sh): tickets: 100, ticks: 12
+3(lab2test): tickets: 100, ticks: 101
+4(lab2test): tickets: 30, ticks: 50
+5(lab2test): tickets: 20, ticks: 33
+6(lab2test): tickets: 10, ticks: 17
+
+$ lab2test 100 2 19 1
+1(init): tickets: 100, ticks: 494
+2(sh): tickets: 100, ticks: 14
+7(lab2test): tickets: 100, ticks: 100
+8(lab2test): tickets: 19, ticks: 95
+9(lab2test): tickets: 1, ticks: 5
 ```
 
 ## Part 3
