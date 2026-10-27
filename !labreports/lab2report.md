@@ -1,4 +1,4 @@
-# Lab 1 Report - 10/3/26
+# Lab 2 Report - 10/27/26
 ### CSEN 383
 ### Zachary Common and Calianna Collins
 ### https://github.com/Eval427/xv6-riscv
