@@ -421,3 +421,6 @@ Our results prove that the stride policy is deterministic while remaining fair. 
 
 ### Stride Scheduler with 8:4:2:1 Tickets per Process
 ![SS8-4-2-1](StrideScheduler8-4-2-1.png)
+
+## Contributions
+Part 1 `sched_tickets(int)` was completed by Zachary, and `sched_statistics(int)` was completed by Calianna. For part 2, lottery was done by Zachary and stride was done by Calianna. The report was written by Zachary, and the demo video recorded by Calianna.
