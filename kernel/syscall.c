@@ -143,11 +143,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_sysinfo]  sys_sysinfo,  // sysinfo: syscall entry
 [SYS_procinfo] sys_procinfo, // procinfo: syscall entry
 [SYS_sched_tickets] sys_sched_tickets, // sched_tickets: syscall entry
-<<<<<<< HEAD
 [SYS_sched_statistics] sys_sched_statistics, //sched_statistics: syscall entry
-=======
-[SYS_sched_statistics] sys_sched_statistics, // sched_statistics: syscall entry
->>>>>>> 5fb2f702898c087f04b53f776f3f556160bad1b3
 [SYS_clone] sys_clone, // clone: syscall entry
 };
 

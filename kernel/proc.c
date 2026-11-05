@@ -800,7 +800,6 @@ int sched_statistics(void) {
   return 0;
 }
 
-<<<<<<< HEAD
 static struct proc* allocthread(struct proc *parent)
 {
   struct proc *p;
@@ -895,8 +894,3 @@ int clone(void *stack) {
 
   return pid;
 }
-=======
-int clone(void *stack) {
-  
-}
->>>>>>> 5fb2f702898c087f04b53f776f3f556160bad1b3
