@@ -793,3 +793,7 @@ int sched_statistics(void) {
 
   return 0;
 }
+
+int clone(void *stack) {
+  
+}

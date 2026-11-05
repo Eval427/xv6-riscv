@@ -145,3 +145,17 @@ uint64 sys_sched_statistics(void) {
   sched_statistics();
   return 0;
 }
+
+uint64 sys_clone(void) {
+  void *stack;
+  argaddr(0, &stack);
+  int cid; // child process id
+
+  if (stack != 0) {
+    clone(stack);
+  } else {
+    return 0;
+  }
+  return cid;
+}
+
