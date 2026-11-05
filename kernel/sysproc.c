@@ -145,3 +145,10 @@ uint64 sys_sched_statistics(void) {
   sched_statistics();
   return 0;
 }
+
+uint64 sys_clone(void) {
+  uint64 stack;
+
+  argaddr(0, &stack);
+  return clone((void *)stack);
+}

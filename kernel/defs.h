@@ -113,6 +113,7 @@ int             print_sysinfo(int); // sysinfo
 int             generate_procinfo(struct pinfo*); // procinfo
 void            set_proc_tickets(int); // sched_tickets
 int             sched_statistics(void); // sched_statistics
+int             clone(void *stack); // clone
 
 // scheduler.c
 void            lottery();

@@ -113,6 +113,7 @@ extern uint64 sys_sysinfo(void);
 extern uint64 sys_procinfo(void);
 extern uint64 sys_sched_tickets(void);
 extern uint64 sys_sched_statistics(void);
+extern uint64 sys_clone(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -143,6 +144,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_procinfo] sys_procinfo, // procinfo: syscall entry
 [SYS_sched_tickets] sys_sched_tickets, // sched_tickets: syscall entry
 [SYS_sched_statistics] sys_sched_statistics, //sched_statistics: syscall entry
+[SYS_clone] sys_clone, // clone: syscall entry
 };
 
 void

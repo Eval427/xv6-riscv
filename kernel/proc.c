@@ -124,6 +124,8 @@ allocproc(void)
 
 found:
   p->pid = allocpid();
+  p->tid = 0; // Parent processes have thread id 0
+  p->threads = 0;
   p->state = USED;
   p->tickets = 100; // Need at least one ticket to run at all - Give 100 for faster testing
   p->syscall_count = 0;
@@ -161,10 +163,14 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  if (p->tid > 0) {
+    uvmunmap(p->pagetable, TRAPFRAME - PGSIZE * p->tid, 1, 0);
+  }
+
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
+  if(p->tid == 0 && p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
   p->sz = 0;
@@ -792,4 +798,99 @@ int sched_statistics(void) {
   }
 
   return 0;
+}
+
+static struct proc* allocthread(struct proc *parent)
+{
+  struct proc *p;
+  uint64 K = 10000;
+
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state == UNUSED) {
+      goto found;
+    } else {
+      release(&p->lock);
+    }
+  }
+  return 0;
+
+found:
+  if (parent->threads >= 20) return 0;
+
+  p->pid = allocpid();
+  p->tid = ++parent->threads;
+  p->state = USED;
+  p->tickets = 100; // Need at least one ticket to run at all - Give 100 for faster testing
+  p->syscall_count = 0;
+  p->stride = K / p->tickets;
+  p->pass = p->stride;
+  p->ticks = 0;
+
+  p->pagetable = 0;
+  p->sz = 0;
+
+  p->trapframe = (struct trapframe *) kalloc();
+  if (p->trapframe == 0) {
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
+  memset(&p->context, 0, sizeof(p->context));
+  p->context.ra = (uint64)forkret;
+  p->context.sp = p->kstack + PGSIZE;
+
+  return p;
+}
+
+int clone(void *stack) {
+  struct proc *thread;
+  struct proc *parent = myproc();
+  int tid;
+  int pid;
+
+  if (stack == 0) return -1;
+
+  if (parent->tid != 0) return -1; // Threads cannot create threads
+
+  if ((thread = allocthread(parent)) == 0) {
+    return -1;
+  }
+
+  tid = thread->tid;
+  thread->pagetable = parent->pagetable;
+  thread->sz = parent->sz;
+
+  if(mappages(thread->pagetable,
+              TRAPFRAME - PGSIZE * tid,
+              PGSIZE,
+              (uint64)thread->trapframe,
+              PTE_R | PTE_W) < 0){
+    thread->pagetable = 0;    // Prevent freeproc() from freeing parent table
+    freeproc(thread);
+    release(&thread->lock);
+    return -1;
+  }
+
+  *(thread->trapframe) = *(parent->trapframe);
+
+  thread->trapframe->a0 = 0;
+  thread->trapframe->sp = (uint64)stack;
+
+  safestrcpy(thread->name, parent->name, sizeof(thread->name));
+
+  pid = thread->pid;
+
+  release(&thread->lock);
+
+  acquire(&wait_lock);
+  thread->parent = parent;
+  release(&wait_lock);
+
+  acquire(&thread->lock);
+  thread->state = RUNNABLE;
+  release(&thread->lock);
+
+  return pid;
 }
