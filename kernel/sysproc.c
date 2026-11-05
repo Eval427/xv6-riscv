@@ -147,8 +147,23 @@ uint64 sys_sched_statistics(void) {
 }
 
 uint64 sys_clone(void) {
+<<<<<<< HEAD
   uint64 stack;
 
   argaddr(0, &stack);
   return clone((void *)stack);
 }
+=======
+  void *stack;
+  argaddr(0, &stack);
+  int cid; // child process id
+
+  if (stack != 0) {
+    clone(stack);
+  } else {
+    return 0;
+  }
+  return cid;
+}
+
+>>>>>>> 5fb2f702898c087f04b53f776f3f556160bad1b3

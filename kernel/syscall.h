@@ -25,4 +25,8 @@
 #define SYS_procinfo 24 // procinfo
 #define SYS_sched_tickets     25 // sched_tickets
 #define SYS_sched_statistics  26 // sched_statistics
+<<<<<<< HEAD
 #define SYS_clone    27 // clone
+=======
+#define SYS_clone    27 // clone
+>>>>>>> 5fb2f702898c087f04b53f776f3f556160bad1b3
