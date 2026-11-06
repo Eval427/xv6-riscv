@@ -850,12 +850,12 @@ int clone(void *stack) {
   int tid;
   int pid;
 
-  if (stack == 0) return -1;
+  if (stack == 0) return 0;
 
-  if (parent->tid != 0) return -1; // Threads cannot create threads
+  if (parent->tid != 0) return 0; // Threads cannot create threads
 
   if ((thread = allocthread(parent)) == 0) {
-    return -1;
+    return 0;
   }
 
   tid = thread->tid;
@@ -870,7 +870,7 @@ int clone(void *stack) {
     thread->pagetable = 0;    // Prevent freeproc() from freeing parent table
     freeproc(thread);
     release(&thread->lock);
-    return -1;
+    return 0;
   }
 
   *(thread->trapframe) = *(parent->trapframe);
