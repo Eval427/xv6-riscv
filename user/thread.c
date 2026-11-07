@@ -1,20 +1,28 @@
-#include "user/thread.h"
+#include "kernel/types.h"
+#include "kernel/riscv.h"
 #include "user/user.h"
-#include "kernel/proc.h"
+#include "user/thread.h"
 
 int thread_create(void *(start_routine)(void*), void *arg) {
-  int pid, tid;
+  int pid;
+  char *stack = malloc(PGSIZE);
+  if (stack == 0) {
+    printf("thread_create failed");
+    exit(1);
+  }
 
-  struct proc p = myproc();
-
-  pid = clone(p->kstack);
+  pid = clone(stack + PGSIZE);
   if (pid < 0){
+    free(stack);
     printf("thread_create failed");
     exit(1);
   }
   else if (pid == 0){
     start_routine(arg); // child executes specified function
+    exit(0);
   }
+
+  return 0;
 }
 
 void lock_init(struct lock_t* lock) {

@@ -816,7 +816,10 @@ static struct proc* allocthread(struct proc *parent)
   return 0;
 
 found:
-  if (parent->threads >= 20) return 0;
+  if (parent->threads >= 20) {
+    release(&p->lock);
+    return 0;
+  }
 
   p->pid = allocpid();
   p->tid = ++parent->threads;
@@ -870,7 +873,7 @@ int clone(void *stack) {
     thread->pagetable = 0;    // Prevent freeproc() from freeing parent table
     freeproc(thread);
     release(&thread->lock);
-    return 0;
+    return -1;
   }
 
   *(thread->trapframe) = *(parent->trapframe);
