@@ -7,14 +7,14 @@ int thread_create(void *(start_routine)(void*), void *arg) {
   int pid;
   char *stack = malloc(PGSIZE);
   if (stack == 0) {
-    printf("thread_create failed");
+    printf("thread_create failed\n");
     exit(1);
   }
 
   pid = clone(stack + PGSIZE);
   if (pid < 0){
     free(stack);
-    printf("thread_create failed");
+    printf("thread_create failed\n");
     exit(1);
   }
   else if (pid == 0){
@@ -26,10 +26,12 @@ int thread_create(void *(start_routine)(void*), void *arg) {
 }
 
 void lock_init(struct lock_t* lock) {
+  printf("Lock Initialized\n");
   lock->locked = 0;
 }
 
 void lock_acquire(struct lock_t* lock) {
+  printf("Lock acquired\n");
   while (__sync_lock_test_and_set(&lock->locked, 1) != 0)
     ;
 
@@ -37,6 +39,7 @@ void lock_acquire(struct lock_t* lock) {
 }
 
 void lock_release(struct lock_t* lock) {
+  printf("Lock released\n");
   __sync_synchronize();
 
   __sync_lock_release(&lock->locked);

@@ -149,7 +149,8 @@ UPROGS=\
 	$U/_procinfo\
 	$U/_lab1test\
 	$U/_sched_tickets\
-	$U/_lab2test
+	$U/_lab2test\
+	$U/_lab3test
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
