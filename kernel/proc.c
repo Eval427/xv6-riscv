@@ -852,6 +852,7 @@ int clone(void *stack) {
   struct proc *parent = myproc();
   int tid;
   int pid;
+  int i;
 
   if (stack == 0) return -1;
 
@@ -880,6 +881,12 @@ int clone(void *stack) {
 
   thread->trapframe->a0 = 0;
   thread->trapframe->sp = (uint64)stack;
+
+    // increment reference counts on open file descriptors.
+  for(i = 0; i < NOFILE; i++)
+    if(parent->ofile[i])
+      thread->ofile[i] = filedup(parent->ofile[i]);
+  thread->cwd = idup(parent->cwd);
 
   safestrcpy(thread->name, parent->name, sizeof(thread->name));
 

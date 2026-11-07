@@ -26,12 +26,10 @@ int thread_create(void *(start_routine)(void*), void *arg) {
 }
 
 void lock_init(struct lock_t* lock) {
-  printf("Lock Initialized\n");
   lock->locked = 0;
 }
 
 void lock_acquire(struct lock_t* lock) {
-  printf("Lock acquired\n");
   while (__sync_lock_test_and_set(&lock->locked, 1) != 0)
     ;
 
@@ -39,7 +37,6 @@ void lock_acquire(struct lock_t* lock) {
 }
 
 void lock_release(struct lock_t* lock) {
-  printf("Lock released\n");
   __sync_synchronize();
 
   __sync_lock_release(&lock->locked);
