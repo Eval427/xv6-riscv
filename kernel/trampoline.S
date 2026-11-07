@@ -67,7 +67,7 @@ uservec:
 	#       restore kernel page table from p->trapframe->kernel_satp
 	ld      t1, 0(a0)
 	csrw    satp, t1
-	sfence.vmazero,zero
+	sfence.vmazero, zero
 	#       a0 is no longer valid, since the kernel page
 	#       table does not specially map p->tf.
 	#       jump to usertrap(), which does not return

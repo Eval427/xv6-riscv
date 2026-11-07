@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
         printf("Usage: %s [N_PASSES] [N_THREADS]\n", argv[0]);
         exit(-1);
     }
-    6 n_passes = atoi(argv[1]);
+    n_passes = atoi(argv[1]);
     n_threads = atoi(argv[2]);
     cur_turn = 0;
     cur_pass = 0;

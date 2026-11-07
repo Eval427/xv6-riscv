@@ -407,7 +407,7 @@ wait(uint64 addr)
   struct proc *p = myproc();
 
   acquire(&wait_lock);
-
+  
   for(;;){
     // Scan through table looking for exited children.
     havekids = 0;
@@ -426,7 +426,7 @@ wait(uint64 addr)
             release(&wait_lock);
             return -1;
           }
-          freeproc(pp);
+          freeproc(pp); // freeproc decides what to free
           release(&pp->lock);
           release(&wait_lock);
           return pid;
@@ -850,12 +850,12 @@ int clone(void *stack) {
   int tid;
   int pid;
 
-  if (stack == 0) return 0;
+  if (stack == 0) return -1;
 
-  if (parent->tid != 0) return 0; // Threads cannot create threads
+  if (parent->tid != 0) return -1; // Threads cannot create threads
 
   if ((thread = allocthread(parent)) == 0) {
-    return 0;
+    return -1;
   }
 
   tid = thread->tid;
