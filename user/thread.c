@@ -1,7 +1,6 @@
 #include "user/thread.h"
 #include "user/user.h"
 #include "kernel/proc.h"
-#include "kernel/riscv.h"
 
 int thread_create(void *(start_routine)(void*), void *arg) {
   int pid, tid;
@@ -18,19 +17,19 @@ int thread_create(void *(start_routine)(void*), void *arg) {
   }
 }
 
-void lock_init(struct lock* lock) {
+void lock_init(struct lock_t* lock) {
   lock->locked = 0;
 }
 
-void lock_acquire(struct lock* lock) {
+void lock_acquire(struct lock_t* lock) {
   while (__sync_lock_test_and_set(&lock->locked, 1) != 0)
     ;
 
   __sync_synchronize();
 }
 
-void lock_release(struct lock* lock) {
+void lock_release(struct lock_t* lock) {
   __sync_synchronize();
 
-  __sync_lcok_release(&lock->locked);
+  __sync_lock_release(&lock->locked);
 }
