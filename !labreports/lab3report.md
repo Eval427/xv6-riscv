@@ -308,3 +308,7 @@ void lock_release(struct lock_t* lock) {
 `Thread.c` primarily defines `thread_create(void *(start_routine)(void*), void *arg)`, which allows threads to be created in user programs. It uses malloc to allocate new stack space inside a process, and sends that added to PGSIZE to clone. Once the thread is created, it gives it a user defined process to work on.
 Each of the lock functions takes advantage of GCCs built in operations to create atomic_test_and_set checks which allow locks to be controlled. These locks control a single boolean lock value which is synchronized using another GCC operation.
 ## Output
+![[Pasted image 20261110214739.png]]
+
+![[Pasted image 20261110214758.png]]
+## Contributions
