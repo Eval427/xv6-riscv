@@ -66,6 +66,7 @@ struct proc {
   int stride;
 };
 ```
+`Trampoline.S` was also changed to a new version provided in the assignment, which also for multi-threaded processes.
 ### Threads vs Children
 To create `clone`, we copied and modified fork so that it used the parents address space instead of a new one.
 ```c
@@ -202,3 +203,108 @@ freeproc(struct proc *p)
 }
 ```
 This allowed us to avoid making any changes to `wait()`, since all the changes to wait are actually relevant to processes freeing.
+```c
+// kernel/defs.h:116
+int clone(void *stack); // clone
+```
+
+```c
+// kernel/syscall.h:28
+#define SYS_clone    27 // clone
+```
+
+```c
+// kernel/syscall.c: 116 & 147
+extern uint64 sys_clone(void);
+...
+[SYS_clone] sys_clone, // clone: syscall entry
+```
+
+```c
+// kernel/sysproc.c
+uint64 sys_clone(void) {
+  uint64 stack;
+  argaddr(0, &stack);
+  
+  return clone((void *)stack);
+}
+```
+
+```c
+// user/user.h:31
+int clone(void*); // clone
+```
+
+```pl
+# user/usys.pl:44
+entry("clone"); # clone syscall
+```
+## Part 2
+Part 2 implements a user-level thread library for creating multi-threaded programs. It creates two new files, `thread.c` and `thread.h`, which serve as library files for other programs to be able to use the new clone syscall correctly.
+### Thread Library
+In addition to making the files for the threads, we had to edit the `Makefile` to include the new library in the compilation.
+```Makefile
+ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o $U/thread.o
+```
+
+`Thread.h` defines a new struct lock_t, which controls the processing of threads in the kernel. It is a simple boolean value which defines whether or not a thread is in use.
+```c
+typedef struct lock_t {
+  uint locked;
+} lock_t;
+
+int thread_create(void *(start_routine)(void*), void *arg);
+void lock_init(struct lock_t* lock);
+void lock_acquire(struct lock_t* lock);
+void lock_release(struct lock_t* lock);
+```
+### Thread.c
+```c
+// kernel/thread.c
+#include "kernel/types.h"
+#include "kernel/riscv.h"
+#include "user/user.h"
+#include "user/thread.h"
+
+int thread_create(void *(start_routine)(void*), void *arg) {
+  int pid;
+  char *stack = malloc(PGSIZE);
+  if (stack == 0) {
+    printf("thread_create failed\n");
+    exit(1);
+  }
+
+  pid = clone(stack + PGSIZE);
+  if (pid < 0){
+    free(stack);
+    printf("thread_create failed\n");
+    exit(1);
+  }
+  else if (pid == 0){
+    start_routine(arg); // child executes specified function
+    exit(0);
+  }
+
+  return 0;
+}
+
+void lock_init(struct lock_t* lock) {
+  lock->locked = 0;
+}
+
+void lock_acquire(struct lock_t* lock) {
+  while (__sync_lock_test_and_set(&lock->locked, 1) != 0)
+    ;
+
+  __sync_synchronize();
+}
+
+void lock_release(struct lock_t* lock) {
+  __sync_synchronize();
+
+  __sync_lock_release(&lock->locked);
+}
+```
+`Thread.c` primarily defines `thread_create(void *(start_routine)(void*), void *arg)`, which allows threads to be created in user programs. It uses malloc to allocate new stack space inside a process, and sends that added to PGSIZE to clone. Once the thread is created, it gives it a user defined process to work on.
+Each of the lock functions takes advantage of GCCs built in operations to create atomic_test_and_set checks which allow locks to be controlled. These locks control a single boolean lock value which is synchronized using another GCC operation.
+## Output
