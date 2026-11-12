@@ -30,9 +30,9 @@
 \ user/usys.pl
 ```
 ## Part 1
-In part 1, we added one new syscall, `clone(void*)`.
+In part 1, we added one new syscall: `clone(void*)`.
 ### Process Changes
-In order for threads to be unique processes, we had to again edit each process in order to contain a thread id value, labeled `tid`. Processes also need to store the number of threads they currently own, since they have an upper limit of 20.
+In order for threads to be unique processes, we had to edit the PCB in order to contain a thread id value, labeled `tid`. Processes also need to store the number of threads they currently own, since they have an upper limit of 20.
 ```c
 // Per-process state
 struct proc {
@@ -66,9 +66,9 @@ struct proc {
   int stride;
 };
 ```
-`Trampoline.S` was also changed to a new version provided in the assignment, which also for multi-threaded processes.
+`trampoline.S` was also changed to a new version provided in the assignment, which also for multi-threaded processes.
 ### Threads vs Children
-To create `clone`, we copied and modified fork so that it used the parents address space instead of a new one.
+To create `clone()`, we copied and modified `fork()` so that it used the parent's address space instead of a new one.
 ```c
 int clone(void *stack) {
   struct proc *thread;
@@ -128,7 +128,7 @@ int clone(void *stack) {
   return pid;
 }
 ```
-Each thread also needed a new way to allocate it, so we created a new struct allocthread, which takes in a parent proc struct and assigns the threads characteristics based on this parent struct.
+Each thread also needed a new way to allocate it, so we created a new function `allocthread(struct proc *parent)`, which takes in a parent proc struct and assigns the thread's characteristics based on this parent struct.
 ```c
 static struct proc* allocthread(struct proc *parent)
 {
@@ -177,7 +177,7 @@ found:
   return p;
 }
 ```
-This struct also calls `freeproc(struct proc)`, which we edited so that threads are freed differently from other processes. Notably, they have to keep the trapframe of the parent process intact, instead of freeing it back to the kernel.
+This struct also calls `freeproc(struct proc*)`, which we edited so that threads are freed differently from other processes. Notably, they have to keep the trapframe of the parent process intact, instead of freeing it back to the kernel.
 ```c
 static void
 freeproc(struct proc *p)
@@ -247,7 +247,7 @@ In addition to making the files for the threads, we had to edit the `Makefile` t
 ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o $U/thread.o
 ```
 
-`Thread.h` defines a new struct lock_t, which controls the processing of threads in the kernel. It is a simple boolean value which defines whether or not a thread is in use.
+`thread.h` defines a new struct lock_t, which controls the processing of threads in the kernel. It is a simple boolean value which defines whether or not a thread is in use.
 ```c
 typedef struct lock_t {
   uint locked;
@@ -258,9 +258,9 @@ void lock_init(struct lock_t* lock);
 void lock_acquire(struct lock_t* lock);
 void lock_release(struct lock_t* lock);
 ```
-### Thread.c
+### thread.c
 ```c
-// kernel/thread.c
+// user/thread.c
 #include "kernel/types.h"
 #include "kernel/riscv.h"
 #include "user/user.h"
@@ -305,10 +305,52 @@ void lock_release(struct lock_t* lock) {
   __sync_lock_release(&lock->locked);
 }
 ```
-`Thread.c` primarily defines `thread_create(void *(start_routine)(void*), void *arg)`, which allows threads to be created in user programs. It uses malloc to allocate new stack space inside a process, and sends that added to PGSIZE to clone. Once the thread is created, it gives it a user defined process to work on.
+`thread.c` primarily defines `thread_create(void *(start_routine)(void*), void *arg)`, which allows threads to be created in user programs. It uses malloc to allocate new stack space inside a process, and sends that added to PGSIZE to clone. Once the thread is created, it gives it a user defined process to execute.
 Each of the lock functions takes advantage of GCCs built in operations to create atomic_test_and_set checks which allow locks to be controlled. These locks control a single boolean lock value which is synchronized using another GCC operation.
 ## Output
-![[Pasted image 20261110214739.png]]
 
-![[Pasted image 20261110214758.png]]
+```
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+init: starting sh
+$ lab3test 10 3
+Round 1: thread 0 is passing the token to thread 1
+Round 2: thread 1 is passing the token to thread 2
+Round 3: thread 2 is passing the token to thread 0
+Round 4: thread 0 is passing the token to thread 1
+Round 5: thread 1 is passing the token to thread 2
+Round 6: thread 2 is passing the token to thread 0
+Round 7: thread 0 is passing the token to thread 1
+Round 8: thread 1 is passing the token to thread 2
+Round 9: thread 2 is passing the token to thread 0
+Round 10: thread 0 is passing the token to thread 1
+Frisbee simulation has finished, 10 rounds played in total
+$ lab3test 21 20
+Round 1: thread 0 is passing the token to thread 1
+Round 2: thread 1 is passing the token to thread 2
+Round 3: thread 2 is passing the token to thread 3
+Round 4: thread 3 is passing the token to thread 4
+Round 5: thread 4 is passing the token to thread 5
+Round 6: thread 5 is passing the token to thread 6
+Round 7: thread 6 is passing the token to thread 7
+Round 8: thread 7 is passing the token to thread 8
+Round 9: thread 8 is passing the token to thread 9
+Round 10: thread 9 is passing the token to thread 10
+Round 11: thread 10 is passing the token to thread 11
+Round 12: thread 11 is passing the token to thread 12
+Round 13: thread 12 is passing the token to thread 13
+Round 14: thread 13 is passing the token to thread 14
+Round 15: thread 14 is passing the token to thread 15
+Round 16: thread 15 is passing the token to thread 16
+Round 17: thread 16 is passing the token to thread 17
+Round 18: thread 17 is passing the token to thread 18
+Round 19: thread 18 is passing the token to thread 19
+Round 20: thread 19 is passing the token to thread 0
+Round 21: thread 0 is passing the token to thread 1
+Frisbee simulation has finished, 21 rounds played in total
+```
+
 ## Contributions
+Both Zack and Calianna worked on the code together in person with extra debugging by Zack to work out a few remaining issues. Calianna wrote the bulk of the lab report while Zack reviewed and edited it.
