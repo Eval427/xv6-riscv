@@ -17,3 +17,15 @@ An eBPF program hooks into the kernel, and the guard reviews all requests to rea
 2. If the link is already created, the read still goes through.
 3. A file that protects all files would have to read every inode entry and compare them with those inside the vault.
 ## Question 4
+Cat, head, and od could all read the file, but cp could not read it. The first three all have the same inode number, but cp has a different inode number. Files with different names which resolve to the same inode number inherit that files access.
+## Question 5
+Policy off
+
+| Outside Vault | Inside Vault |
+| ------------- | ------------ |
+| 901.1ns       | 900.0ns      |
+Policy On
+
+| Outside Vault | Inside Vault |
+| ------------- | ------------ |
+| 951.1ns       | 1031.0ns     |
