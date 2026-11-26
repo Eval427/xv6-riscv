@@ -29,3 +29,4 @@ Policy On
 | Outside Vault | Inside Vault |
 | ------------- | ------------ |
 | 951.1ns       | 1031.0ns     |
+The extra time comes from the guard, which reviews file accesses to make sure they are allowed into the vault. Since it views all file reads and writes, accesses outside the vault still pay extra time just to confirm access into the vault is not required.
